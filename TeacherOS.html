@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TeacherOS — AI Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2335;
+    --border: #2a2f45;
+    --accent: #4f8ef7;
+    --accent2: #7c5cbf;
+    --green: #34c97b;
+    --orange: #f5a623;
+    --red: #f05a5a;
+    --text: #e8eaf0;
+    --muted: #7a819a;
+    --card: #1a1f31;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── SETUP SCREEN ── */
+  #setup-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: radial-gradient(ellipse at 30% 40%, #1a2040 0%, var(--bg) 70%);
+  }
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+  }
+  .setup-card .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.4rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .setup-card .tagline { color: var(--muted); font-size: 0.95rem; margin-bottom: 32px; }
+  .setup-card label { display: block; text-align: left; font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+  .setup-card input, .setup-card select {
+    width: 100%; padding: 14px 16px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    font-family: inherit; font-size: 0.95rem;
+    margin-bottom: 16px; outline: none;
+    transition: border-color .2s;
+  }
+  .setup-card input:focus, .setup-card select:focus { border-color: var(--accent); }
+  .setup-card select option { background: var(--bg); }
+  .btn-primary {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px;
+    color: #fff; font-family: inherit;
+    font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: opacity .2s, transform .1s;
+  }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .setup-note { font-size: 0.78rem; color: var(--muted); margin-top: 16px; line-height: 1.6; }
+  .setup-note a { color: var(--accent); text-decoration: none; }
+
+  /* ── MAIN APP ── */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; height: 62px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header-teacher { font-size: 0.85rem; color: var(--muted); }
+  .header-teacher span { color: var(--text); font-weight: 600; }
+  .btn-settings {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--muted); padding: 6px 14px; border-radius: 8px;
+    font-size: 0.8rem; cursor: pointer; font-family: inherit;
+    transition: color .2s, border-color .2s;
+  }
+  .btn-settings:hover { color: var(--text); border-color: var(--accent); }
+
+  /* ── LAYOUT ── */
+  .layout { display: flex; flex: 1; }
+
+  /* ── SIDEBAR ── */
+  nav {
+    width: 220px; min-height: calc(100vh - 62px);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 12px; flex-shrink: 0;
+  }
+  .nav-label {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); padding: 0 12px; margin-bottom: 8px; margin-top: 20px;
+  }
+  .nav-label:first-child { margin-top: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 9px;
+    font-size: 0.9rem; cursor: pointer; color: var(--muted);
+    transition: background .15s, color .15s; margin-bottom: 2px;
+    border: none; background: none; width: 100%; text-align: left;
+    font-family: inherit;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(79,142,247,0.12); color: var(--accent); font-weight: 600; }
+  .nav-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+
+  /* ── CONTENT ── */
+  main { flex: 1; padding: 32px; overflow-y: auto; max-width: 900px; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .page-title {
+    font-size: 1.5rem; font-weight: 700; margin-bottom: 4px;
+  }
+  .page-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px; margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 0.85rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--muted); margin-bottom: 16px;
+  }
+
+  /* ── FORM ELEMENTS ── */
+  label.field-label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; margin-top: 14px; }
+  label.field-label:first-child { margin-top: 0; }
+  input[type=text], input[type=email], input[type=date], input[type=time],
+  select, textarea {
+    width: 100%; padding: 11px 14px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 9px; color: var(--text);
+    font-family: inherit; font-size: 0.9rem; outline: none;
+    transition: border-color .2s;
+    resize: vertical;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--surface); }
+  textarea { min-height: 90px; }
+
+  .row { display: flex; gap: 14px; }
+  .row > * { flex: 1; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 11px 22px; border-radius: 9px; font-family: inherit;
+    font-size: 0.88rem; font-weight: 600; cursor: pointer;
+    border: none; transition: opacity .2s, transform .1s;
+  }
+  .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-accent { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+  .btn-green { background: var(--green); color: #0a1a10; }
+  .btn-outline {
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { color: var(--text); border-color: var(--accent); }
+  .btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+  /* ── OUTPUT BOX ── */
+  .output-box {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+    font-size: 0.88rem; line-height: 1.7; color: var(--text);
+    white-space: pre-wrap; min-height: 80px;
+    margin-top: 16px; display: none;
+  }
+  .output-box.visible { display: block; }
+  .output-label {
+    font-size: 0.75rem; color: var(--muted); text-transform: uppercase;
+    letter-spacing: .06em; margin-bottom: 8px;
+  }
+
+  /* ── LOADING ── */
+  .spinner {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.2);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── BADGE / TAG ── */
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 0.75rem; font-weight: 600;
+  }
+  .badge-green { background: rgba(52,201,123,.15); color: var(--green); }
+  .badge-orange { background: rgba(245,166,35,.15); color: var(--orange); }
+  .badge-red { background: rgba(240,90,90,.15); color: var(--red); }
+  .badge-blue { background: rgba(79,142,247,.15); color: var(--accent); }
+
+  /* ── STUDENT TABLE ── */
+  .student-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .student-table th {
+    text-align: left; padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: .05em;
+  }
+  .student-table td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.04); }
+  .student-table tr:last-child td { border-bottom: none; }
+  .student-table tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* ── CHECKBOX ── */
+  .check-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
+  .check-row label { font-size: 0.88rem; cursor: pointer; color: var(--text); }
+
+  /* ── NOTICE ── */
+  .notice {
+    padding: 12px 16px; border-radius: 9px; font-size: 0.85rem;
+    margin-bottom: 16px; line-height: 1.5;
+  }
+  .notice-blue { background: rgba(79,142,247,.1); border-left: 3px solid var(--accent); color: var(--text); }
+  .notice-green { background: rgba(52,201,123,.1); border-left: 3px solid var(--green); color: var(--text); }
+
+  /* ── COPY BUTTON ── */
+  .copy-btn {
+    float: right; background: var(--surface); border: 1px solid var(--border);
+    color: var(--muted); padding: 4px 12px; border-radius: 6px;
+    font-size: 0.75rem; cursor: pointer; font-family: inherit;
+    transition: color .15s;
+  }
+  .copy-btn:hover { color: var(--text); }
+
+  /* ── SETTINGS PANEL ── */
+  #settings-panel {
+    display: none; position: fixed; top: 62px; right: 0;
+    width: 340px; height: calc(100vh - 62px);
+    background: var(--surface); border-left: 1px solid var(--border);
+    padding: 28px; z-index: 200; overflow-y: auto;
+    box-shadow: -20px 0 40px rgba(0,0,0,.3);
+  }
+  #settings-panel.open { display: block; }
+  .settings-title { font-size: 1rem; font-weight: 700; margin-bottom: 20px; }
+  .settings-close {
+    float: right; background: none; border: none;
+    color: var(--muted); font-size: 1.2rem; cursor: pointer;
+  }
+
+  /* ── DASHBOARD ── */
+  .dash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .dash-stat {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+  }
+  .dash-stat .num { font-size: 2rem; font-weight: 700; margin-bottom: 4px; }
+  .dash-stat .lbl { font-size: 0.8rem; color: var(--muted); }
+  .dash-stat.blue .num { color: var(--accent); }
+  .dash-stat.green .num { color: var(--green); }
+  .dash-stat.orange .num { color: var(--orange); }
+
+  /* ── TABS WITHIN CARD ── */
+  .inner-tabs { display: flex; gap: 6px; margin-bottom: 18px; }
+  .inner-tab {
+    padding: 7px 16px; border-radius: 8px; font-size: 0.83rem;
+    cursor: pointer; border: 1px solid var(--border);
+    background: none; color: var(--muted); font-family: inherit;
+    transition: all .15s;
+  }
+  .inner-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── MULTI-EMAIL LIST ── */
+  .email-preview-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; margin-bottom: 10px;
+  }
+  .email-preview-item .ep-name { font-weight: 600; font-size: 0.88rem; margin-bottom: 4px; }
+  .email-preview-item .ep-body { font-size: 0.83rem; color: var(--muted); line-height: 1.5; white-space: pre-wrap; }
+  .email-preview-item .ep-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+  @media (max-width: 700px) {
+    nav { display: none; }
+    main { padding: 16px; }
+    .dash-grid { grid-template-columns: 1fr 1fr; }
+    .row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ SETUP SCREEN ══════════════ -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="logo">TeacherOS</div>
+    <div class="tagline">Your AI Command Center — set up once, use every day</div>
+    <label>Your Name</label>
+    <input type="text" id="setup-name" placeholder="e.g. Mr. Yusifov" />
+    <label>Your Subject & Grade</label>
+    <input type="text" id="setup-subject" placeholder="e.g. Math — 8th & 9th Grade" />
+    <label>School Name</label>
+    <input type="text" id="setup-school" placeholder="e.g. Allen High School" />
+    <label>Your Email (for drafts reference)</label>
+    <input type="email" id="setup-email" placeholder="you@district.edu" />
+    <label>Anthropic API Key</label>
+    <input type="text" id="setup-apikey" placeholder="sk-ant-..." />
+    <button class="btn-primary" onclick="saveSetup()">Launch TeacherOS →</button>
+    <div class="setup-note">
+      Your API key is stored only in your browser — never sent anywhere except Anthropic's servers.<br>
+      Get a free key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> · Typical cost: pennies per month.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MAIN APP ══════════════ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-logo">TeacherOS</div>
+    <div class="header-teacher">Logged in as <span id="header-name">Teacher</span></div>
+    <button class="btn-settings" onclick="toggleSettings()">⚙ Settings</button>
+  </header>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <nav>
+      <div class="nav-label">Overview</div>
+      <button class="nav-item active" onclick="showTab('dashboard', this)">
+        <span class="nav-icon">🏠</span> Dashboard
+      </button>
+
+      <div class="nav-label">Communication</div>
+      <button class="nav-item" onclick="showTab('email-reply', this)">
+        <span class="nav-icon">📧</span> Email Reply
+      </button>
+      <button class="nav-item" onclick="showTab('parent-email', this)">
+        <span class="nav-icon">👨‍👩‍👧</span> Parent Emails
+      </button>
+      <button class="nav-item" onclick="showTab('announcements', this)">
+        <span class="nav-icon">📢</span> Announcements
+      </button>
+
+      <div class="nav-label">Classroom</div>
+      <button class="nav-item" onclick="showTab('student-alerts', this)">
+        <span class="nav-icon">📊</span> Student Alerts
+      </button>
+      <button class="nav-item" onclick="showTab('calendar', this)">
+        <span class="nav-icon">📅</span> Calendar Helper
+      </button>
+
+      <div class="nav-label">Teaching</div>
+      <button class="nav-item" onclick="showTab('lesson', this)">
+        <span class="nav-icon">📝</span> Lesson Planner
+      </button>
+      <button class="nav-item" onclick="showTab('differentiate', this)">
+        <span class="nav-icon">🎯</span> Differentiation
+      </button>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main>
+
+      <!-- ── DASHBOARD ── -->
+      <div id="tab-dashboard" class="tab-content active">
+        <div class="page-title">Good morning, <span id="dash-name">Teacher</span> 👋</div>
+        <div class="page-sub">Here's your TeacherOS command center. Pick a tool from the sidebar.</div>
+
+        <div class="dash-grid">
+          <div class="dash-stat blue">
+            <div class="num">8</div>
+            <div class="lbl">Tools available</div>
+          </div>
+          <div class="dash-stat green">
+            <div class="num">0¢</div>
+            <div class="lbl">Monthly subscription</div>
+          </div>
+          <div class="dash-stat orange">
+            <div class="num">~2¢</div>
+            <div class="lbl">Cost per parent email batch</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Quick Start</div>
+          <div class="notice notice-blue">
+            💡 <strong>Recommended for your first session:</strong> Start with <em>Parent Emails</em> or <em>Student Alerts</em> — paste your grade list and TeacherOS will draft every email in one click.
+          </div>
+          <div style="font-size:0.88rem; color:var(--muted); line-height:1.8;">
+            <strong style="color:var(--text)">📧 Email Reply</strong> — Paste any admin or parent email, get a professional draft reply.<br>
+            <strong style="color:var(--text)">👨‍👩‍👧 Parent Emails</strong> — Paste your grade list, get batch parent emails for failing or at-risk students.<br>
+            <strong style="color:var(--text)">📢 Announcements</strong> — Create test reminders & tutoring invites to send home.<br>
+            <strong style="color:var(--text)">📊 Student Alerts</strong> — Enter grades, TeacherOS flags who needs attention and drafts outreach.<br>
+            <strong style="color:var(--text)">📅 Calendar Helper</strong> — Paste a meeting email, get a ready-to-add calendar event.<br>
+            <strong style="color:var(--text)">📝 Lesson Planner</strong> — TEKS objective in, full lesson plan out.<br>
+            <strong style="color:var(--text)">🎯 Differentiation</strong> — Any problem → 3 levels + ESL scaffold instantly.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── EMAIL REPLY ── -->
+      <div id="tab-email-reply" class="tab-content">
+        <div class="page-title">📧 Email Reply</div>
+        <div class="page-sub">Paste any email you received — from admin, parents, or staff. TeacherOS drafts your reply.</div>
+        <div class="card">
+          <div class="card-title">Incoming Email</div>
+          <label class="field-label">Paste the email you received</label>
+          <textarea id="email-in" placeholder="Paste the full email here..."></textarea>
+          <label class="field-label">Tone for your reply</label>
+          <select id="email-tone">
+            <option value="professional and warm">Professional & warm</option>
+            <option value="brief and direct">Brief & direct</option>
+            <option value="detailed and thorough">Detailed & thorough</option>
+            <option value="apologetic and solution-focused">Apologetic & solution-focused</option>
+          </select>
+          <label class="field-label">Any key points to include? (optional)</label>
+          <textarea id="email-notes" placeholder="e.g. mention I'm available Thursday after school, reference parent conference on the 15th..." style="min-height:60px;"></textarea>
+          <div class="btn-row">
+            <button class="btn btn-accent" onclick="runEmailReply()">✦ Draft My Reply</button>
+          </div>
+          <div id="email-out-wrap">
+            <div class="output-label">Your Draft Reply <button class="copy-btn" onclick="copyText('email-out')">Copy</button></div>
+            <div id="email-out" class="output-box"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PARENT EMAILS ── -->
+      <div id="tab-parent-email" class="tab-content">
+        <div class="page-title">👨‍👩‍👧 Parent Emails</div>
+        <div class="page-sub">Enter student names and grades. TeacherOS drafts personalized emails for each family.</div>
+
+        <div class="card">
+          <div class="card-title">Email Type</div>
+          <div class="inner-tabs">
+            <button class="inner-tab active" onclick="setParentMode('failing', this)">Failing / At-Risk</button>
+            <button class="inner-tab" onclick="setParentMode('progress', this)">Progress Update</button>
+            <button class="inner-tab" onclick="setParentMode('positive', this)">Positive Recognition</button>
+          </div>
+
+          <label class="field-label">Student Names & Grades (one per line: Name, Grade%)</label>
+          <textarea id="parent-students" placeholder="Maria Garcia, 58&#10;James Thompson, 62&#10;Aisha Patel, 71&#10;..."></textarea>
+
+          <label class="field-label">Class / Period</label>
+          <input type="text" id="parent-class" placeholder="e.g. Algebra 1, Period 3" />
+
+          <label class="field-label">Brief context (optional)</label>
+          <textarea id="parent-context" placeholder="e.g. Unit 4 test coming up, student has been missing homework, we have tutoring Tues/Thurs 3:30pm..." style="min-height:60px;"></textarea>
+
+          <div class="btn-row">
+            <button class="btn btn-accent" onclick="runParentEmails()">✦ Draft All Parent Emails</button>
+          </div>
+          <div id="parent-out-section" style="display:none; margin-top:20px;">
+            <div class="output-label">Drafted Emails — review each one before sending</div>
+            <div id="parent-emails-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ANNOUNCEMENTS ── -->
+      <div id="tab-announcements" class="tab-content">
+        <div class="page-title">📢 Announcements</div>
+        <div class="page-sub">Create professional announcements for parents about tests, tutoring, or important events.</div>
+        <div class="card">
+          <div class="card-title">Announcement Type</div>
+          <label class="field-label">Type</label>
+          <select id="ann-type">
+            <option value="upcoming test">📝 Upcoming Test / Quiz</option>
+            <option value="tutoring session">📚 Tutoring Session Invite</option>
+            <option value="missing assignments">⚠ Missing Assignments Reminder</option>
+            <option value="grade update">📊 Grade Update</option>
+            <option value="class event">🎉 Class Event</option>
+            <option value="custom">✏ Custom Message</option>
+          </select>
+
+          <label class="field-label">Topic / Subject</label>
+          <input type="text" id="ann-topic" placeholder="e.g. Quadratic Equations, Chapter 7 Test" />
+
+          <div class="row">
+            <div>
+              <label class="field-label">Date</label>
+              <input type="date" id="ann-date" />
+            </div>
+            <div>
+              <label class="field-label">Time (if applicable)</label>
+              <input type="time" id="ann-time" />
+            </div>
+          </div>
+
+          <label class="field-label">Location / Room (if applicable)</label>
+          <input type="text" id="ann-location" placeholder="e.g. Room 214, Library" />
+
+          <label class="field-label">Any additional details</label>
+          <textarea id="ann-details" placeholder="e.g. students should bring notes, tutoring is free and open to all, study guide attached..." style="min-height:60px;"></textarea>
+
+          <div class="btn-row">
+            <button class="btn btn-accent" onclick="runAnnouncement()">✦ Create Announcement</button>
+          </div>
+          <div id="ann-out-wrap" style="margin-top:16px; display:none;">
+            <div class="output-label">Announcement Draft <button class="copy-btn" onclick="copyText('ann-out')">Copy</button></div>
+            <div id="ann-out" class="output-box visible"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STUDENT ALERTS ── -->
+      <div id="tab-student-alerts" class="tab-content">
+        <div class="page-title">📊 Student Alerts</div>
+        <div class="page-sub">Paste your class grades. TeacherOS identifies students who need attention and tells you what action to take.</div>
+        <div class="card">
+          <label class="field-label">Class Name</label>
+          <input type="text" id="alert-class" placeholder="e.g. Geometry Period 2" />
+          <label class="field-label">Paste grade list (Name, Grade — one per line)</label>
+          <textarea id="alert-grades" placeholder="Alex Kim, 94&#10;Maria Garcia, 58&#10;James Thompson, 71&#10;Priya Nair, 43&#10;Lucas Brown, 88&#10;..."></textarea>
+          <label class="field-label">Failing threshold (%)</label>
+          <input type="text" id="alert-threshold" placeholder="70" style="max-width:120px;" />
+          <div class="btn-row">
+            <button class="btn btn-accent" onclick="runStudentAlerts()">✦ Analyze & Flag Students</button>
+          </div>
+          <div id="alert-out-wrap" style="margin-top:20px; display:none;">
+            <div class="output-label">Analysis & Recommended Actions</div>
+            <div id="alert-out" class="output-box visible"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CALENDAR HELPER ── -->
+      <div id="tab-calendar" class="tab-content">
+        <div class="page-title">📅 Calendar Helper</div>
+        <div class="page-sub">Paste a meeting notice or email. TeacherOS extracts the event details so you can add it to your calendar in one step.</div>
+        <div class="card">
+          <label class="field-label">Paste the email or message about the meeting/event</label>
+          <textarea id="cal-in" placeholder="e.g. 'Hi staff, please join us for the department PLN on Thursday, August 14th at 3:45pm in the library conference room...'"></textarea>
+          <div class="btn-row">
+            <button class="btn btn-accent" onclick="runCalendar()">✦ Extract Event Details</button>
+          </div>
+          <div id="cal-out-wrap" style="display:none; margin-top:20px;">
+            <div class="card" style="background:var(--surface2); margin-bottom:0;">
+              <div class="card-title">📅 Event Preview — confirm before adding</div>
+              <div id="cal-fields"></div>
+              <div class="btn-row">
+                <button class="btn btn-green" onclick="addToGoogleCal()">Add to Google Calendar →</button>
+                <button class="btn btn-outline" onclick="copyCalText()">Copy Event Text</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LESSON PLANNER ── -->
+      <div id="tab-lesson" class="tab-content">
+        <div class="page-title">📝 Lesson Planner</div>
+        <div class="page-sub">Enter your TEKS objective and TeacherOS builds a complete lesson plan.</div>
+        <div class="card">
+          <div class="row">
+            <div>
+              <label class="field-label">TEKS Objective</label>
+              <input type="text" id="lp-teks" placeholder="e.g. 8.4A — represent linear situations using tables, equations, verbal descriptions, and graphs" />
+            </div>
+            <div>
+              <label class="field-label">Grade Level</label>
+              <select id="lp-grade">
+                <option>6th Grade</option>
+                <option>7th Grade</option>
+                <option selected>8th Grade</option>
+                <option>Algebra 1</option>
+                <option>Geometry</option>
+                <option>Algebra 2</option>
+                <option>Pre-Calculus</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label class="field-label">Class Duration</label>
+              <select id="lp-duration">
+                <option>45 minutes</option>
+                <option selected>50 minutes</option>
+                <option>55 minutes</option>
+                <option>90 minutes (block)</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Include</label>
+              <select id="lp-extras">
+                <option value="warm-up, instruction, practice, exit ticket">Full lesson (warm-up → exit ticket)</option>
+                <option value="warm-up only">Warm-up only</option>
+                <option value="exit ticket only">Exit ticket only</option>
+                <option value="notes and examples">Notes & examples only</option>
+              </select>
+            </div>
+          </div>
+          <label class="field-label">Special notes (optional)</label>
+          <textarea id="lp-notes" placeholder="e.g. students struggled with slope last week, include real-world context, have 3 ELL students..." style="min-height:60px;"></textarea>
+          <div class="btn-row">
+            <button class="btn btn-accent" onclick="runLessonPlan()">✦ Generate Lesson Plan</button>
+          </div>
+          <div id="lp-out-wrap" style="margin-top:16px; display:none;">
+            <div class="output-label">Lesson Plan <button class="copy-btn" onclick="copyText('lp-out')">Copy</button></div>
+            <div id="lp-out" class="output-box visible"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DIFFERENTIATION ── -->
+      <div id="tab-differentiate" class="tab-content">
+        <div class="page-title">🎯 Differentiation</div>
+        <div class="page-sub">Paste any math problem or assignment. TeacherOS creates versions for every learner in your class.</div>
+        <div class="card">
+          <label class="field-label">Original Problem or Assignment</label>
+          <textarea id="diff-input" placeholder="Paste your problem or assignment here..."></textarea>
+          <label class="field-label">What versions do you need?</label>
+          <div style="display:flex; flex-wrap:wrap; gap:16px; margin-top:4px;">
+            <div class="check-row"><input type="checkbox" id="diff-below" checked><label for="diff-below">Below grade level (scaffolded)</label></div>
+            <div class="check-row"><input type="checkbox" id="diff-on" checked><label for="diff-on">On grade level</label></div>
+            <div class="check-row"><input type="checkbox" id="diff-above" checked><label for="diff-above">Above grade level (enriched)</label></div>
+            <div class="check-row"><input type="checkbox" id="diff-esl" checked><label for="diff-esl">ESL / ELL scaffold</label></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-accent" onclick="runDifferentiation()">✦ Differentiate</button>
+          </div>
+          <div id="diff-out-wrap" style="margin-top:16px; display:none;">
+            <div class="output-label">Differentiated Versions <button class="copy-btn" onclick="copyText('diff-out')">Copy</button></div>
+            <div id="diff-out" class="output-box visible"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div><!-- /layout -->
+
+  <!-- SETTINGS PANEL -->
+  <div id="settings-panel">
+    <button class="settings-close" onclick="toggleSettings()">✕</button>
+    <div class="settings-title">⚙ Settings</div>
+    <label class="field-label">Your Name</label>
+    <input type="text" id="s-name" />
+    <label class="field-label">Subject & Grade</label>
+    <input type="text" id="s-subject" />
+    <label class="field-label">School Name</label>
+    <input type="text" id="s-school" />
+    <label class="field-label">Your Email</label>
+    <input type="email" id="s-email" />
+    <label class="field-label">API Key</label>
+    <input type="text" id="s-apikey" />
+    <div class="btn-row">
+      <button class="btn btn-accent" onclick="saveSettings()">Save Changes</button>
+    </div>
+    <div style="margin-top:28px; border-top:1px solid var(--border); padding-top:20px;">
+      <div style="font-size:0.8rem; color:var(--muted); line-height:1.7;">
+        <strong style="color:var(--text)">Privacy</strong><br>
+        Your API key and all settings are stored only in your browser's local storage. Nothing is saved to any server.
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════
+//  STATE & INIT
+// ══════════════════════════════════════════
+let CONFIG = {};
+let parentMode = 'failing';
+let calEventData = null;
+
+function loadConfig() {
+  const saved = localStorage.getItem('teacheros_config');
+  if (saved) CONFIG = JSON.parse(saved);
+}
+
+function saveSetup() {
+  const name    = document.getElementById('setup-name').value.trim();
+  const subject = document.getElementById('setup-subject').value.trim();
+  const school  = document.getElementById('setup-school').value.trim();
+  const email   = document.getElementById('setup-email').value.trim();
+  const apikey  = document.getElementById('setup-apikey').value.trim();
+  if (!name || !apikey) { alert('Please enter at least your name and API key.'); return; }
+  CONFIG = { name, subject, school, email, apikey };
+  localStorage.setItem('teacheros_config', JSON.stringify(CONFIG));
+  launchApp();
+}
+
+function launchApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('header-name').textContent = CONFIG.name || 'Teacher';
+  document.getElementById('dash-name').textContent = (CONFIG.name || 'Teacher').split(' ')[0];
+}
+
+window.onload = () => {
+  loadConfig();
+  if (CONFIG.apikey) launchApp();
+};
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function toggleSettings() {
+  const p = document.getElementById('settings-panel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) {
+    document.getElementById('s-name').value    = CONFIG.name    || '';
+    document.getElementById('s-subject').value = CONFIG.subject || '';
+    document.getElementById('s-school').value  = CONFIG.school  || '';
+    document.getElementById('s-email').value   = CONFIG.email   || '';
+    document.getElementById('s-apikey').value  = CONFIG.apikey  || '';
+  }
+}
+
+function saveSettings() {
+  CONFIG.name    = document.getElementById('s-name').value.trim();
+  CONFIG.subject = document.getElementById('s-subject').value.trim();
+  CONFIG.school  = document.getElementById('s-school').value.trim();
+  CONFIG.email   = document.getElementById('s-email').value.trim();
+  CONFIG.apikey  = document.getElementById('s-apikey').value.trim();
+  localStorage.setItem('teacheros_config', JSON.stringify(CONFIG));
+  document.getElementById('header-name').textContent = CONFIG.name;
+  document.getElementById('dash-name').textContent = CONFIG.name.split(' ')[0];
+  toggleSettings();
+  showToast('Settings saved ✓');
+}
+
+function setParentMode(mode, btn) {
+  parentMode = mode;
+  document.querySelectorAll('.inner-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════
+//  CLAUDE API CALL
+// ══════════════════════════════════════════
+async function callClaude(systemPrompt, userMessage) {
+  const payload = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1500,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userMessage }]
+  };
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-api-key': CONFIG.apikey,
+    'anthropic-version': '2023-06-01'
+  };
+  const proxies = [
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.anthropic.com/v1/messages'),
+    'https://corsproxy.io/?url=https://api.anthropic.com/v1/messages',
+    'https://proxy.cors.sh/https://api.anthropic.com/v1/messages'
+  ];
+  for (const url of proxies) {
+    try {
+      const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.content?.[0]?.text) return data.content[0].text;
+      }
+    } catch(e) { continue; }
+  }
+  throw new Error('Could not connect. Please check your API key and internet connection.');
+}
+
+// helper: set button to loading state
+function setLoading(btnEl, loading, originalText) {
+  if (loading) {
+    btnEl.disabled = true;
+    btnEl.innerHTML = '<span class="spinner"></span>Working...';
+  } else {
+    btnEl.disabled = false;
+    btnEl.innerHTML = originalText;
+  }
+}
+
+// ══════════════════════════════════════════
+//  TOOL 1 — EMAIL REPLY
+// ══════════════════════════════════════════
+async function runEmailReply() {
+  const emailIn  = document.getElementById('email-in').value.trim();
+  const tone     = document.getElementById('email-tone').value;
+  const notes    = document.getElementById('email-notes').value.trim();
+  if (!emailIn) { alert('Please paste the email you received.'); return; }
+
+  const btn = event.target;
+  setLoading(btn, true, '✦ Draft My Reply');
+  try {
+    const system = `You are an AI assistant for ${CONFIG.name}, a ${CONFIG.subject} teacher at ${CONFIG.school}. 
+Write professional email replies on their behalf. Sign emails as "${CONFIG.name}". 
+Keep the tone ${tone}. Write only the email body and subject line — no extra commentary.`;
+    const user = `Email received:\n${emailIn}\n\n${notes ? 'Key points to include: ' + notes : ''}`;
+    const out = await callClaude(system, user);
+    const box = document.getElementById('email-out');
+    box.textContent = out;
+    box.classList.add('visible');
+    document.getElementById('email-out-wrap').style.display = 'block';
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoading(btn, false, '✦ Draft My Reply');
+}
+
+// ══════════════════════════════════════════
+//  TOOL 2 — PARENT EMAILS
+// ══════════════════════════════════════════
+async function runParentEmails() {
+  const students = document.getElementById('parent-students').value.trim();
+  const cls      = document.getElementById('parent-class').value.trim();
+  const context  = document.getElementById('parent-context').value.trim();
+  if (!students) { alert('Please enter student names and grades.'); return; }
+
+  const btn = event.target;
+  setLoading(btn, true, '✦ Draft All Parent Emails');
+
+  const modeDesc = {
+    failing: 'concerned, supportive emails to parents of struggling/failing students',
+    progress: 'informative progress update emails to all listed parents',
+    positive: 'positive recognition emails celebrating student progress'
+  };
+
+  try {
+    const system = `You are an AI assistant for ${CONFIG.name}, a ${CONFIG.subject} teacher at ${CONFIG.school}.
+Draft ${modeDesc[parentMode]}. 
+Write each email as ${CONFIG.name}. Use a warm, professional tone.
+Return JSON only — an array of objects: [{name, grade, email_body}]
+No markdown, no commentary, just the JSON array.`;
+    const user = `Class: ${cls || CONFIG.subject}\nStudents and grades:\n${students}\n${context ? 'Context: ' + context : ''}`;
+
+    const raw = await callClaude(system, user);
+    let emails;
+    try { emails = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+    catch { throw new Error('Could not parse email list. Try again.'); }
+
+    const list = document.getElementById('parent-emails-list');
+    list.innerHTML = '';
+    emails.forEach((e, i) => {
+      const gradeColor = parseFloat(e.grade) < 70 ? 'var(--red)' : parseFloat(e.grade) < 80 ? 'var(--orange)' : 'var(--green)';
+      list.innerHTML += `
+        <div class="email-preview-item">
+          <div class="ep-name">${e.name} <span style="color:${gradeColor}; font-size:0.82rem; margin-left:8px;">${e.grade}%</span></div>
+          <div class="ep-body" id="pe-body-${i}">${e.email_body}</div>
+          <div class="ep-actions">
+            <button class="btn btn-outline btn-sm" onclick="copyTextFromEl('pe-body-${i}')">Copy</button>
+          </div>
+        </div>`;
+    });
+    document.getElementById('parent-out-section').style.display = 'block';
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoading(btn, false, '✦ Draft All Parent Emails');
+}
+
+// ══════════════════════════════════════════
+//  TOOL 3 — ANNOUNCEMENTS
+// ══════════════════════════════════════════
+async function runAnnouncement() {
+  const type     = document.getElementById('ann-type').value;
+  const topic    = document.getElementById('ann-topic').value.trim();
+  const date     = document.getElementById('ann-date').value;
+  const time     = document.getElementById('ann-time').value;
+  const location = document.getElementById('ann-location').value.trim();
+  const details  = document.getElementById('ann-details').value.trim();
+  if (!topic) { alert('Please enter the topic.'); return; }
+
+  const btn = event.target;
+  setLoading(btn, true, '✦ Create Announcement');
+  try {
+    const system = `You are an AI assistant for ${CONFIG.name} at ${CONFIG.school}.
+Write a clear, professional parent/student announcement. Be warm and informative.
+Sign it as ${CONFIG.name}. Write only the announcement text, no extra commentary.`;
+    const user = `Type: ${type}\nTopic: ${topic}\n${date ? 'Date: ' + date : ''}\n${time ? 'Time: ' + time : ''}\n${location ? 'Location: ' + location : ''}\n${details ? 'Additional info: ' + details : ''}`;
+
+    const out = await callClaude(system, user);
+    document.getElementById('ann-out').textContent = out;
+    document.getElementById('ann-out-wrap').style.display = 'block';
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoading(btn, false, '✦ Create Announcement');
+}
+
+// ══════════════════════════════════════════
+//  TOOL 4 — STUDENT ALERTS
+// ══════════════════════════════════════════
+async function runStudentAlerts() {
+  const cls       = document.getElementById('alert-class').value.trim();
+  const grades    = document.getElementById('alert-grades').value.trim();
+  const threshold = document.getElementById('alert-threshold').value.trim() || '70';
+  if (!grades) { alert('Please paste your grade list.'); return; }
+
+  const btn = event.target;
+  setLoading(btn, true, '✦ Analyze & Flag Students');
+  try {
+    const system = `You are an academic support AI for ${CONFIG.name}, a ${CONFIG.subject} teacher at ${CONFIG.school}.
+Analyze the class grades. Identify students at or below ${threshold}% as failing, ${Number(threshold)+1}–${Number(threshold)+10}% as at-risk.
+For each flagged student give: their name, grade, status (Failing/At-Risk), and a one-line recommended action.
+Then provide a brief class summary at the end.
+Format clearly with headings. Be concise and actionable.`;
+    const user = `Class: ${cls || CONFIG.subject}\nThreshold: ${threshold}%\n\nGrades:\n${grades}`;
+
+    const out = await callClaude(system, user);
+    const box = document.getElementById('alert-out');
+    box.textContent = out;
+    document.getElementById('alert-out-wrap').style.display = 'block';
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoading(btn, false, '✦ Analyze & Flag Students');
+}
+
+// ══════════════════════════════════════════
+//  TOOL 5 — CALENDAR HELPER
+// ══════════════════════════════════════════
+async function runCalendar() {
+  const txt = document.getElementById('cal-in').value.trim();
+  if (!txt) { alert('Please paste the meeting email or message.'); return; }
+
+  const btn = event.target;
+  setLoading(btn, true, '✦ Extract Event Details');
+  try {
+    const system = `Extract calendar event details from the text. 
+Return JSON only: {title, date, time, end_time, location, description}
+Use ISO date format (YYYY-MM-DD) for date. 24h format for times. 
+If any field is unknown, use empty string. No markdown, just JSON.`;
+    const raw = await callClaude(system, txt);
+    let ev;
+    try { ev = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+    catch { throw new Error('Could not parse event. Try pasting more of the email.'); }
+
+    calEventData = ev;
+    const fields = document.getElementById('cal-fields');
+    fields.innerHTML = `
+      <label class="field-label">Event Title</label>
+      <input type="text" id="cal-title" value="${ev.title || ''}" />
+      <div class="row">
+        <div><label class="field-label">Date</label><input type="date" id="cal-date" value="${ev.date || ''}" /></div>
+        <div><label class="field-label">Start Time</label><input type="time" id="cal-time" value="${ev.time || ''}" /></div>
+        <div><label class="field-label">End Time</label><input type="time" id="cal-etime" value="${ev.end_time || ''}" /></div>
+      </div>
+      <label class="field-label">Location</label>
+      <input type="text" id="cal-loc" value="${ev.location || ''}" />
+      <label class="field-label">Description</label>
+      <textarea id="cal-desc" style="min-height:60px;">${ev.description || ''}</textarea>`;
+    document.getElementById('cal-out-wrap').style.display = 'block';
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoading(btn, false, '✦ Extract Event Details');
+}
+
+function addToGoogleCal() {
+  const title = document.getElementById('cal-title')?.value || '';
+  const date  = (document.getElementById('cal-date')?.value || '').replace(/-/g, '');
+  const time  = (document.getElementById('cal-time')?.value || '').replace(':', '') + '00';
+  const etime = (document.getElementById('cal-etime')?.value || '').replace(':', '') + '00';
+  const loc   = document.getElementById('cal-loc')?.value || '';
+  const desc  = document.getElementById('cal-desc')?.value || '';
+  const start = date + 'T' + time;
+  const end   = date + 'T' + (etime || time);
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE`
+    + `&text=${encodeURIComponent(title)}`
+    + `&dates=${start}/${end}`
+    + `&location=${encodeURIComponent(loc)}`
+    + `&details=${encodeURIComponent(desc)}`;
+  window.open(url, '_blank');
+}
+
+function copyCalText() {
+  const title = document.getElementById('cal-title')?.value || '';
+  const date  = document.getElementById('cal-date')?.value || '';
+  const time  = document.getElementById('cal-time')?.value || '';
+  const loc   = document.getElementById('cal-loc')?.value || '';
+  const text  = `Event: ${title}\nDate: ${date}\nTime: ${time}\nLocation: ${loc}`;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied!'));
+}
+
+// ══════════════════════════════════════════
+//  TOOL 6 — LESSON PLANNER
+// ══════════════════════════════════════════
+async function runLessonPlan() {
+  const teks     = document.getElementById('lp-teks').value.trim();
+  const grade    = document.getElementById('lp-grade').value;
+  const duration = document.getElementById('lp-duration').value;
+  const extras   = document.getElementById('lp-extras').value;
+  const notes    = document.getElementById('lp-notes').value.trim();
+  if (!teks) { alert('Please enter the TEKS objective.'); return; }
+
+  const btn = event.target;
+  setLoading(btn, true, '✦ Generate Lesson Plan');
+  try {
+    const system = `You are a master ${CONFIG.subject} curriculum designer creating lesson plans for Texas teachers (TEKS-aligned). 
+Be specific, practical, and ready to use. Include timing for each section.`;
+    const user = `Create a ${duration} lesson plan for ${grade} Math.
+TEKS: ${teks}
+Include: ${extras}
+${notes ? 'Teacher notes: ' + notes : ''}`;
+
+    const out = await callClaude(system, user);
+    document.getElementById('lp-out').textContent = out;
+    document.getElementById('lp-out-wrap').style.display = 'block';
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoading(btn, false, '✦ Generate Lesson Plan');
+}
+
+// ══════════════════════════════════════════
+//  TOOL 7 — DIFFERENTIATION
+// ══════════════════════════════════════════
+async function runDifferentiation() {
+  const input = document.getElementById('diff-input').value.trim();
+  if (!input) { alert('Please paste a problem or assignment.'); return; }
+
+  const below = document.getElementById('diff-below').checked;
+  const on    = document.getElementById('diff-on').checked;
+  const above = document.getElementById('diff-above').checked;
+  const esl   = document.getElementById('diff-esl').checked;
+
+  const versions = [below && 'Below grade level (scaffolded with steps and hints)', on && 'On grade level (standard)', above && 'Above grade level (enriched, extended thinking)', esl && 'ESL/ELL scaffold (simplified language, visual cues noted, key vocab defined)'].filter(Boolean);
+  if (!versions.length) { alert('Select at least one version.'); return; }
+
+  const btn = event.target;
+  setLoading(btn, true, '✦ Differentiate');
+  try {
+    const system = `You are a Math differentiation specialist for ${CONFIG.subject} in Texas.
+Create clearly labeled versions of the given problem/assignment. Keep the core math skill the same.
+Format each version with a clear header.`;
+    const user = `Original problem/assignment:\n${input}\n\nCreate these versions:\n${versions.join('\n')}`;
+
+    const out = await callClaude(system, user);
+    document.getElementById('diff-out').textContent = out;
+    document.getElementById('diff-out-wrap').style.display = 'block';
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoading(btn, false, '✦ Differentiate');
+}
+
+// ══════════════════════════════════════════
+//  UTILITIES
+// ══════════════════════════════════════════
+function copyText(id) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent).then(() => showToast('Copied!'));
+}
+function copyTextFromEl(id) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent).then(() => showToast('Copied!'));
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position: 'fixed', bottom: '28px', right: '28px',
+    background: 'var(--green)', color: '#0a1a10',
+    padding: '10px 20px', borderRadius: '9px',
+    fontFamily: 'DM Sans', fontSize: '0.88rem', fontWeight: '600',
+    zIndex: '9999', boxShadow: '0 8px 20px rgba(0,0,0,.3)',
+    animation: 'fadeIn .2s ease'
+  });
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+</script>
+</body>
+</html>
